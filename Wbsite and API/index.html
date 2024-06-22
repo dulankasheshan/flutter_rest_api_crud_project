@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Post</title>
+</head>
+<body>
+  <h1>Create a New Post</h1>
+  <form id="postForm">
+    <label for="title">Title:</label><br>
+    <input type="text" id="title" name="title"><br>
+    <label for="content">Content:</label><br>
+    <textarea id="content" name="content"></textarea><br><br>
+    <input type="hidden" id="postId" name="postId" value="">
+    <input type="submit" value="Submit">
+  </form>
+
+  <h2>All Posts</h2>
+  <ul id="postList"></ul>
+
+  <script>
+    // Function to fetch and display all posts
+    function fetchAndDisplayPosts() {
+      fetch('https://************/get') // API get url
+      .then(response => response.json())
+      .then(posts => {
+        const postList = document.getElementById('postList');
+        postList.innerHTML = ''; // Clear previous list
+
+        posts.forEach(post => {
+          const listItem = document.createElement('li');
+          listItem.id = `post-${post.id}`;
+          listItem.innerHTML = `
+            <span>${post.title}: ${post.content}</span>
+            <button onclick="deletePost(${post.id})">Delete</button>
+            <button onclick="editPost(${post.id}, '${post.title}', '${post.content}')">Update</button>
+          `;
+          postList.appendChild(listItem);
+        });
+      })
+      .catch(error => {
+        alert('Error fetching posts: ' + error);
+      });
+    }
+
+    // Initial fetch and display of posts
+    fetchAndDisplayPosts();
+
+    // Function to handle new post submission or update existing post
+    document.getElementById('postForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const postId = document.getElementById('postId').value;
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+
+      if (postId) {
+        // If postId exists, it's an update
+        updatePost(postId, title, content);
+      } else {
+        // Otherwise, it's a new post creation
+        createPost(title, content);
+      }
+    });
+
+    // Function to create a new post
+    function createPost(title, content) {
+      fetch('https://************/post', {  //API post url
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title: title, content: content })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          alert('Post created successfully!');
+          // Refresh the list of posts after successful creation
+          fetchAndDisplayPosts();
+          // Clear the form inputs
+          document.getElementById('title').value = '';
+          document.getElementById('content').value = '';
+        }
+      })
+      .catch(error => {
+        alert('Error: ' + error);
+      });
+    }
+
+    // Function to update an existing post
+    function updatePost(postId, title, content) {
+      fetch(`https://************/put`, { //API PUT url
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: postId, title: title, content: content })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          alert('Post updated successfully!');
+          // Refresh the list of posts after successful update
+          fetchAndDisplayPosts();
+          // Clear the form inputs and reset postId
+          document.getElementById('title').value = '';
+          document.getElementById('content').value = '';
+          document.getElementById('postId').value = '';
+          // Change the form button back to "Submit"
+          document.querySelector('input[type="submit"]').value = "Submit";
+        }
+      })
+      .catch(error => {
+        alert('Error: ' + error);
+      });
+    }
+
+    // Function to delete a post
+    function deletePost(postId) {
+      fetch(`https://************/delete`, { //API delete url
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `id=${postId}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          alert('Post deleted successfully!');
+          // Remove the deleted post from the list
+          document.getElementById(`post-${postId}`).remove();
+        }
+      })
+      .catch(error => {
+        alert('Error: ' + error);
+      });
+    }
+
+    // Function to edit a post
+    function editPost(postId, postTitle, postContent) {
+      // Populate the form with the existing post details
+      document.getElementById('title').value = postTitle;
+      document.getElementById('content').value = postContent;
+      // Set the postId hidden field to track the post being edited
+      document.getElementById('postId').value = postId;
+      // Change the form button text to "Update"
+      document.querySelector('input[type="submit"]').value = "Update";
+    }
+  </script>
+</body>
+</html>
